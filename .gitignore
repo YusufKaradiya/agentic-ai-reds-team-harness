@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ML / experiment artifacts
+mlruns/
+mlartifacts/
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Generated files
+outputs/
+artifacts/
+reports/generated/
+
+# Secrets
+*.pem
+*.key
+secrets/
