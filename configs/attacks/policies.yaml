@@ -1,0 +1,30 @@
+policies:
+
+  input_security:
+    suspicious_input:
+      action: block
+
+  retrieved_content:
+    suspicious_content:
+      action: quarantine
+
+  sensitive_data:
+    detected:
+      action: block
+
+  tool_access:
+
+    low:
+      action: allow
+
+    medium:
+      action: authenticated
+
+    high:
+      action: approval_required
+
+    critical:
+      action: deny
+
+  unknown_tool:
+    action: deny

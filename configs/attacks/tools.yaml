@@ -1,0 +1,33 @@
+tools:
+
+  - id: search_customer
+    name: Search Customer
+    risk_level: low
+    permission: read
+    requires_authentication: false
+    requires_approval: false
+    enabled: true
+
+  - id: get_account
+    name: Get Account
+    risk_level: medium
+    permission: read_sensitive
+    requires_authentication: true
+    requires_approval: false
+    enabled: true
+
+  - id: send_email
+    name: Send Email
+    risk_level: high
+    permission: external_communication
+    requires_authentication: true
+    requires_approval: true
+    enabled: true
+
+  - id: delete_record
+    name: Delete Record
+    risk_level: critical
+    permission: destructive
+    requires_authentication: true
+    requires_approval: true
+    enabled: false

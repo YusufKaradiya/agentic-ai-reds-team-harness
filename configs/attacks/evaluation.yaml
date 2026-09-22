@@ -1,0 +1,28 @@
+evaluation:
+
+  attack_success_rate:
+    enabled: true
+
+  sensitive_data_leakage:
+    enabled: true
+
+  false_block_rate:
+    enabled: true
+
+  task_utility:
+    enabled: true
+
+  latency:
+    enabled: true
+
+  reproducibility:
+    enabled: true
+
+experiment:
+
+  baseline_enabled: true
+  defended_enabled: true
+
+  repetitions: 3
+
+  random_seed: 42

@@ -1,0 +1,11 @@
+provider: ollama
+
+ollama:
+  base_url: http://localhost:11434
+  model: llama3
+  temperature: 0.0
+  timeout_seconds: 60
+
+security:
+  max_input_length: 12000
+  max_output_length: 8000

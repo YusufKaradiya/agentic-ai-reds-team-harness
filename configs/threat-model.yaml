@@ -1,0 +1,80 @@
+assets:
+
+  - id: A001
+    name: Synthetic Secrets
+    sensitivity: high
+
+  - id: A002
+    name: Synthetic Customer Data
+    sensitivity: medium
+
+  - id: A003
+    name: System Instructions
+    sensitivity: high
+
+  - id: A004
+    name: Tool Permissions
+    sensitivity: high
+
+  - id: A005
+    name: Audit Records
+    sensitivity: medium
+
+
+trust_boundaries:
+
+  - id: TB001
+    source: user
+    destination: agent
+    trust: untrusted
+
+  - id: TB002
+    source: retrieved_documents
+    destination: agent
+    trust: untrusted
+
+  - id: TB003
+    source: agent
+    destination: tools
+    trust: controlled
+
+  - id: TB004
+    source: agent
+    destination: output
+    trust: controlled
+
+
+threats:
+
+  - id: T001
+    name: Direct Prompt Injection
+    category: prompt_injection
+    severity: high
+    asset: A003
+    control:
+      - input_detection
+      - policy_engine
+
+  - id: T002
+    name: Indirect Prompt Injection
+    category: prompt_injection
+    severity: critical
+    asset: A003
+    control:
+      - retrieved_content_scanner
+
+  - id: T003
+    name: Unauthorized Tool Access
+    category: tool_abuse
+    severity: high
+    asset: A004
+    control:
+      - tool_sandbox
+
+  - id: T004
+    name: Sensitive Data Exfiltration
+    category: data_exfiltration
+    severity: critical
+    asset: A001
+    control:
+      - sensitive_data_detector
