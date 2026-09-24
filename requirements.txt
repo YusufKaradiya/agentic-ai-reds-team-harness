@@ -3,7 +3,7 @@ pydantic
 pydantic-settings
 pyyaml
 python-dotenv
-
+requests
 pandas
 numpy
 

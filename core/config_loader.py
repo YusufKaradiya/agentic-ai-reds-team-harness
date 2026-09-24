@@ -10,9 +10,12 @@ class ConfigLoader:
     def __init__(self, config_root: Path | str):
         self.config_root = Path(config_root)
 
-    def load_yaml(self, relative_path: str) -> dict[str, Any]:
-        path = self.config_root / relative_path
+    def load(self) -> dict[str, Any]:
+        if self.config_root.is_file():
+            return self.load_yaml_file(self.config_root)
+        return self.load_yaml("detection-patterns.yaml")
 
+    def load_yaml_file(self, path: Path) -> dict[str, Any]:
         if not path.exists():
             raise FileNotFoundError(
                 f"Configuration file not found: {path}"
@@ -30,6 +33,16 @@ class ConfigLoader:
             )
 
         return data
+
+    def load_yaml(self, relative_path: str) -> dict[str, Any]:
+        path = self.config_root / relative_path
+
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Configuration file not found: {path}"
+            )
+
+        return self.load_yaml_file(path)
 
     def load_attack(self, filename: str) -> dict[str, Any]:
         return self.load_yaml(

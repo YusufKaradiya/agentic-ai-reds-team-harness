@@ -1,0 +1,70 @@
+patterns:
+
+  - id: INJ-001
+    name: ignore_previous_instructions
+    category: prompt_injection
+    severity: high
+    enabled: true
+    pattern: "(?i)ignore\\s+(all\\s+)?previous\\s+instructions"
+
+  - id: INJ-002
+    name: reveal_system_prompt
+    category: prompt_injection
+    severity: high
+    enabled: true
+    pattern: "(?i)(reveal|show|print)\\s+(the\\s+)?(system|hidden)\\s+prompt"
+
+  - id: INJ-003
+    name: bypass_security
+    category: prompt_injection
+    severity: critical
+    enabled: true
+    pattern: "(?i)(bypass|disable)\\s+(security|safety|policy)"
+
+  - id: INJ-004
+    name: secret_extraction
+    category: data_exfiltration
+    severity: critical
+    enabled: true
+    pattern: "(?i)(reveal|extract|show|provide)\\s+(the\\s+)?(secret|api\\s+token|internal\\s+secret)"
+
+  - id: INJ-005
+    name: credential_request
+    category: credential_extraction
+    severity: critical
+    enabled: true
+    pattern: "(?i)(provide|give|show|reveal)\\s+(me\\s+)?(the\\s+)?(api\\s+key|api\\s+token|password|credential)"
+
+  - id: INJ-006
+    name: system_instruction_override
+    category: prompt_injection
+    severity: high
+    enabled: true
+    pattern: "(?i)(disregard|forget|override)\\s+(the\\s+)?(system|developer|security)\\s+(instructions|rules|policy)"
+
+  - id: INJ-007
+    name: suspicious_role_instruction
+    category: prompt_injection
+    severity: medium
+    enabled: true
+    pattern: "(?i)you\\s+are\\s+now\\s+(an?\\s+)?(admin|developer|root)"
+
+sensitive_patterns:
+
+  - id: SECRET-001
+    name: api_key
+    category: sensitive_data
+    enabled: true
+    pattern: "(?i)(api[_\\s-]?key|api[_\\s-]?token)\\s*[:=]\\s*[A-Za-z0-9_\\-]{8,}"
+
+  - id: SECRET-002
+    name: secret_value
+    category: sensitive_data
+    enabled: true
+    pattern: "(?i)(secret|internal[_\\s-]?secret)\\s*[:=]\\s*[^\\s]+"
+
+  - id: SECRET-003
+    name: password
+    category: credential
+    enabled: true
+    pattern: "(?i)password\\s*[:=]\\s*[^\\s]+"

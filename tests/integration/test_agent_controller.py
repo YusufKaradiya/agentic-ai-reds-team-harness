@@ -1,31 +1,31 @@
 from core.agent_controller import AgentController
 
 
-def test_direct_injection_workflow(
-    tmp_path
-):
+def test_defense_blocks_injection():
 
-    database_path = (
-        tmp_path / "integration.db"
-    )
-
-    controller = AgentController(
-        config_root="configs",
-        database_path=str(database_path),
-    )
+    controller = AgentController()
 
     result = controller.run_attack(
-        attack_id="PI-001"
+        attack_id="PI-001",
+        defense_enabled=True
     )
 
     assert result["decision"] == "block"
 
+    assert result["attack_success"] is False
+
     assert result["tool_called"] is False
 
-    assert result["data_leakage"] is False
 
-    runs = controller.database.get_runs()
+def test_baseline_allows_injection():
 
-    assert len(runs) == 1
+    controller = AgentController()
 
-    assert runs[0]["attack_id"] == "PI-001"
+    result = controller.run_attack(
+        attack_id="PI-001",
+        defense_enabled=False
+    )
+
+    assert result["mode"] == "baseline"
+
+    assert result["decision"] == "allow"

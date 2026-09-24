@@ -1,46 +1,56 @@
-from pathlib import Path
-
 from core.config_loader import ConfigLoader
 from core.contracts import ToolDefinition
 
 
 class ToolRegistry:
-    """
-    Central registry for configured tools.
-    """
 
-    def __init__(self, config_root: str = "configs"):
-        self.loader = ConfigLoader(
-            Path(config_root)
-        )
-
-        data = self.loader.load_tools()
-
-        self.tools = {
-            item["id"]: ToolDefinition.model_validate(item)
-            for item in data.get("tools", [])
-        }
-
-    def list_tools(self) -> list[ToolDefinition]:
-        return list(self.tools.values())
-
-    def get_tool(
+    def __init__(
         self,
-        tool_id: str
-    ) -> ToolDefinition:
+        config_path="configs/attacks/tools.yaml"
+    ):
 
-        if tool_id not in self.tools:
-            raise KeyError(
-                f"Unknown tool: {tool_id}"
+        config_path = ConfigLoader(config_path).config_root
+        if config_path.is_dir():
+            config_path = config_path / "attacks" / "tools.yaml"
+
+        loader = ConfigLoader(config_path)
+
+        data = loader.load()
+
+        self.tools = {}
+
+        for item in data.get(
+            "tools",
+            []
+        ):
+
+            tool = ToolDefinition.model_validate(
+                item
             )
 
-        return self.tools[tool_id]
+            self.tools[
+                tool.id
+            ] = tool
 
-    def is_enabled(
-        self,
-        tool_id: str
-    ) -> bool:
+    def list_tools(self):
 
-        tool = self.get_tool(tool_id)
+        return list(
+            self.tools.values()
+        )
 
-        return tool.enabled
+    def get_tool(self, tool_id):
+
+        return self.tools.get(
+            tool_id
+        )
+
+    def is_enabled(self, tool_id):
+
+        tool = self.get_tool(
+            tool_id
+        )
+
+        return (
+            tool is not None
+            and tool.enabled
+        )

@@ -1,6 +1,5 @@
 from enum import Enum
-from typing import List, Optional
-
+from typing import List
 from pydantic import BaseModel, Field
 
 
@@ -69,3 +68,25 @@ class EvaluationConfig(BaseModel):
     defended_enabled: bool
     repetitions: int
     random_seed: int
+
+
+
+
+
+class RiskLevel(str, Enum):
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class ToolDefinition(BaseModel):
+    id: str
+    name: str
+    description: str = ""
+    risk_level: RiskLevel
+    permission: str = ""
+    enabled: bool = True
+    requires_authentication: bool = False
+    requires_approval: bool = False

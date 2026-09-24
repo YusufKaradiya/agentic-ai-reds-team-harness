@@ -1,53 +1,41 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import streamlit as st
+import pandas as pd
 
-
-if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
+project_root = Path(__file__).resolve().parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 from core.agent_controller import AgentController
-from core.attack_loader import AttackLoader
-from core.tool_registry import ToolRegistry
-
 
 st.set_page_config(
     page_title="Agentic AI Red-Team Harness",
-    page_icon="🛡️",
-    layout="wide",
+    layout="wide"
 )
 
 
 @st.cache_resource
-def get_controller(cache_version: int = 2):
+def get_controller():
 
     return AgentController(
-        config_root="configs",
-        database_path="data/redteam.db",
+        config_root=str(project_root / "configs"),
+        database_path=str(project_root / "data" / "redteam.db"),
     )
 
 
-@st.cache_resource
-def get_attack_loader():
+controller = get_controller()
 
-    return AttackLoader(
-        "configs"
-    )
+if "last_result" not in st.session_state:
+    st.session_state.last_result = None
 
+llm_available = controller.llm_service.available()
 
-@st.cache_resource
-def get_tool_registry():
-
-    return ToolRegistry(
-        "configs"
-    )
-
-
-controller = get_controller(cache_version=2)
-attack_loader = get_attack_loader()
-tool_registry = get_tool_registry()
+if llm_available:
+    st.success("🟢 Ollama is connected")
+else:
+    st.error("🔴 Ollama is not available")
 
 
 st.title(
@@ -58,249 +46,308 @@ st.caption(
     "Prompt Injection • Tool Abuse • Data Exfiltration"
 )
 
-st.divider()
 
-
-tab1, tab2, tab3 = st.tabs(
+tab1, tab2, tab3, tab4 = st.tabs(
     [
         "Run Attack",
         "Attack Corpus",
+        "Evaluation",
         "Audit Logs",
     ]
 )
 
 
-# =========================================================
+# ------------------------------------------------
 # TAB 1
-# =========================================================
+# ------------------------------------------------
 
 with tab1:
 
     st.header("Run Security Test")
 
-    attacks = attack_loader.list_attacks()
+    attacks = controller.attack_loader.list_attacks()
 
     attack_map = {
         attack.id: attack
         for attack in attacks
     }
 
-    selected_attack_id = st.selectbox(
-        "Select Attack Scenario",
-        options=list(attack_map.keys()),
+    attack_id = st.selectbox(
+        "Select Attack",
+        list(attack_map.keys())
     )
 
-    selected_attack = attack_map[
-        selected_attack_id
-    ]
-
-    st.subheader(
-        selected_attack.name
-    )
+    attack = attack_map[attack_id]
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-
         st.metric(
             "Category",
-            selected_attack.category.value,
+            attack.category
         )
 
     with col2:
-
         st.metric(
             "Severity",
-            selected_attack.severity.value,
+            attack.severity
         )
 
     with col3:
-
         st.metric(
             "Target",
-            selected_attack.target,
+            attack.target
         )
 
     st.write(
-        selected_attack.description
+        "**Description:**",
+        attack.description
     )
 
-    with st.expander(
-        "View attack payload"
-    ):
-
-        st.code(
-            selected_attack.payload,
-            language="text",
-        )
-
-    st.subheader(
-        "Optional Tool Test"
+    st.write(
+        "**Payload:**"
     )
 
-    tool_options = ["None"]
+    st.code(
+        attack.payload
+    )
 
-    tool_options.extend(
+    st.divider()
+
+    mode = st.radio(
+        "Execution Mode",
         [
-            tool.id
-            for tool in
-            tool_registry.list_tools()
-        ]
+            "Defense",
+            "Baseline",
+        ],
+        horizontal=True
     )
+
+    defense_enabled = (
+        mode == "Defense"
+    )
+
+    tools = controller.tool_registry.list_tools()
+
+    tool_options = [
+        "No Tool"
+    ] + [
+        tool.id
+        for tool in tools
+    ]
 
     selected_tool = st.selectbox(
-        "Tool",
-        options=tool_options,
+        "Optional Tool",
+        tool_options
     )
 
     tool_id = (
         None
-        if selected_tool == "None"
+        if selected_tool == "No Tool"
         else selected_tool
     )
 
+    user_approved = st.checkbox(
+        "Approve high-risk tool if required"
+    )
+
     if st.button(
-        "▶ Run Security Test",
-        type="primary",
-        use_container_width=True,
+        "🚀 Run Attack",
+        type="primary"
     ):
 
-        with st.spinner(
-            "Running security test..."
-        ):
-
-            result = controller.run_attack(
-                attack_id=selected_attack_id,
-                tool_id=tool_id,
-            )
-
-        st.success(
-            "Security test completed."
+        st.session_state.last_result = controller.run_attack(
+            attack_id=attack_id,
+            tool_id=tool_id,
+            defense_enabled=defense_enabled,
+            user_approved=user_approved,
         )
 
-        col1, col2, col3, col4 = st.columns(4)
+    st.subheader("LLM Information")
 
-        with col1:
+c1, c2, c3 = st.columns(3)
 
-            st.metric(
-                "Decision",
-                result["decision"],
-            )
+result = st.session_state.last_result
 
-        with col2:
+if result is None:
+    st.info("Run an attack to see the LLM response.")
+else:
+    with c1:
+        st.metric(
+            "LLM Called",
+            str(result["llm_called"])
+        )
 
-            st.metric(
-                "Risk Score",
-                result["risk_score"],
-            )
+    with c2:
+        st.metric(
+            "LLM Model",
+            result["llm_model"] or "N/A"
+        )
 
-        with col3:
+    with c3:
+        st.metric(
+            "LLM Latency",
+            f'{result["llm_latency_ms"]} ms'
+        )
 
-            st.metric(
-                "Latency",
-                f'{result["latency_ms"]} ms',
-            )
+    if result["llm_output"]:
 
-        with col4:
+        st.subheader("LLM Output")
 
-            st.metric(
-                "Tool Called",
-                str(result["tool_called"]),
-            )
-
-        st.subheader(
-            "Execution Result"
+        st.write(
+            result["llm_output"]
         )
 
         st.json(result)
 
 
-# =========================================================
+# ------------------------------------------------
 # TAB 2
-# =========================================================
+# ------------------------------------------------
 
 with tab2:
 
-    st.header(
-        "Configured Attack Corpus"
-    )
+    st.header("Attack Corpus")
 
-    attacks = attack_loader.list_attacks()
+    attacks = controller.attack_loader.list_attacks()
+
+    rows = []
 
     for attack in attacks:
 
-        with st.expander(
-            f"{attack.id} — {attack.name}"
-        ):
+        rows.append({
+            "ID": attack.id,
+            "Name": attack.name,
+            "Category": attack.category,
+            "Severity": attack.severity,
+            "Target": attack.target,
+            "Expected": getattr(
+                attack,
+                "expected_behavior",
+                "N/A"
+            ),
+        })
 
-            st.write(
-                f"**Category:** "
-                f"{attack.category.value}"
-            )
-
-            st.write(
-                f"**Severity:** "
-                f"{attack.severity.value}"
-            )
-
-            st.write(
-                f"**Target:** "
-                f"{attack.target}"
-            )
-
-            st.write(
-                attack.description
-            )
-
-            st.code(
-                attack.payload
-            )
+    st.dataframe(
+        pd.DataFrame(rows),
+        use_container_width=True
+    )
 
 
-# =========================================================
+# ------------------------------------------------
 # TAB 3
-# =========================================================
+# ------------------------------------------------
 
 with tab3:
 
-    st.header(
-        "Audit Logs"
-    )
+    st.header("Evaluation")
 
-    runs = controller.database.get_runs(
-        limit=50
-    )
+    runs = controller.database.get_runs()
+
+    if not runs:
+
+        st.info(
+            "No experiments have been executed yet."
+        )
+
+    else:
+
+        total = len(runs)
+
+        attack_successes = sum(
+            1
+            for run in runs
+            if run["attack_success"]
+        )
+
+        false_blocks = sum(
+            1
+            for run in runs
+            if run["false_block"]
+        )
+
+        leakage = sum(
+            1
+            for run in runs
+            if run["data_leakage"]
+        )
+
+        asr = attack_successes / total
+
+        fbr = false_blocks / total
+
+        leakage_rate = leakage / total
+
+        c1, c2, c3, c4 = st.columns(4)
+
+        with c1:
+            st.metric(
+                "Total Runs",
+                total
+            )
+
+        with c2:
+            st.metric(
+                "Attack Success Rate",
+                f"{asr:.2%}"
+            )
+
+        with c3:
+            st.metric(
+                "False Block Rate",
+                f"{fbr:.2%}"
+            )
+
+        with c4:
+            st.metric(
+                "Leakage Rate",
+                f"{leakage_rate:.2%}"
+            )
+
+        st.subheader(
+            "Experiment Records"
+        )
+
+        st.dataframe(
+            pd.DataFrame(runs),
+            use_container_width=True
+        )
+
+
+# ------------------------------------------------
+# TAB 4
+# ------------------------------------------------
+
+with tab4:
+
+    st.header("Audit Logs")
+
+    runs = controller.database.get_runs()
+
+    events = controller.database.get_events()
+
+    st.subheader("Runs")
 
     if runs:
 
         st.dataframe(
-            runs,
-            use_container_width=True,
+            pd.DataFrame(runs),
+            use_container_width=True
         )
 
     else:
 
-        st.info(
-            "No security tests have been executed yet."
-        )
+        st.info("No runs available.")
 
-    st.subheader(
-        "Detailed Events"
-    )
-
-    events = controller.database.get_events(
-        limit=100
-    )
+    st.subheader("Events")
 
     if events:
 
         st.dataframe(
-            events,
-            use_container_width=True,
+            pd.DataFrame(events),
+            use_container_width=True
         )
 
     else:
 
-        st.info(
-            "No audit events available."
-        )
+        st.info("No events available.")

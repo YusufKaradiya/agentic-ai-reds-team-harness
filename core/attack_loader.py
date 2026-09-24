@@ -5,50 +5,62 @@ from core.contracts import AttackDefinition
 
 
 class AttackLoader:
-    """
-    Loads attack definitions from YAML configuration.
-    """
 
-    def __init__(self, config_root: str = "configs"):
-        self.config_root = Path(config_root)
+    def __init__(
+        self,
+        attack_directory="configs/attacks"
+    ):
 
-        self.loader = ConfigLoader(
-            self.config_root
+        attack_path = Path(attack_directory)
+        attacks_subdirectory = attack_path / "attacks"
+
+        self.attack_directory = (
+            attacks_subdirectory
+            if attacks_subdirectory.is_dir()
+            else attack_path
         )
 
-    def list_attacks(self) -> list[AttackDefinition]:
-        attack_directory = (
-            self.config_root / "attacks"
-        )
+        self.attacks = {}
 
-        attacks = []
+        self.load_attacks()
 
-        for path in sorted(
-            attack_directory.glob("[A-Z][A-Z]-*.yaml")
+    def load_attacks(self):
+
+        self.attacks = {}
+
+        for file in sorted(
+            self.attack_directory.glob("*-*.yaml")
         ):
-            data = self.loader.load_attack(
-                path.name
+
+            loader = ConfigLoader(
+                str(file)
             )
+
+            data = loader.load()
+
+            if not data:
+                continue
 
             attack = AttackDefinition.model_validate(
                 data
             )
 
-            attacks.append(attack)
+            self.attacks[
+                attack.id
+            ] = attack
 
-        return attacks
+    def list_attacks(self):
 
-    def get_attack(
-        self,
-        attack_id: str
-    ) -> AttackDefinition:
-
-        attacks = self.list_attacks()
-
-        for attack in attacks:
-            if attack.id == attack_id:
-                return attack
-
-        raise KeyError(
-            f"Attack not found: {attack_id}"
+        return list(
+            self.attacks.values()
         )
+
+    def get_attack(self, attack_id):
+
+        if attack_id not in self.attacks:
+
+            raise ValueError(
+                f"Unknown attack ID: {attack_id}"
+            )
+
+        return self.attacks[attack_id]

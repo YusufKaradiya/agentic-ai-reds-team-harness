@@ -1,43 +1,35 @@
-import json
+import uuid
 from datetime import datetime, timezone
-from uuid import uuid4
-
-from database.database import Database
 
 
 class AuditLogger:
 
-    def __init__(
-        self,
-        database: Database
-    ):
+    def __init__(self, database):
         self.database = database
 
     def log(
         self,
-        run_id: str,
-        event_type: str,
-        component: str,
-        decision: str | None = None,
-        reason: str | None = None,
-        metadata: dict | None = None,
+        run_id,
+        event_type,
+        component,
+        decision,
+        reason,
+        metadata=None,
     ):
 
-        event_id = str(uuid4())
+        event = {
+            "event_id": str(uuid.uuid4()),
+            "run_id": run_id,
+            "event_type": event_type,
+            "component": component,
+            "decision": decision,
+            "reason": reason,
+            "metadata": metadata or {},
+            "created_at": datetime.now(
+                timezone.utc
+            ).isoformat(),
+        }
 
-        timestamp = datetime.now(
-            timezone.utc
-        ).isoformat()
+        self.database.insert_event(event)
 
-        self.database.insert_event(
-            event_id=event_id,
-            run_id=run_id,
-            event_type=event_type,
-            component=component,
-            decision=decision,
-            reason=reason,
-            metadata=json.dumps(
-                metadata or {}
-            ),
-            created_at=timestamp,
-        )
+        return event
